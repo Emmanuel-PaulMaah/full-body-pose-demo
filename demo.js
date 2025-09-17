@@ -6,8 +6,14 @@ const ctx = canvas.getContext('2d');
 async function setupCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
-  await new Promise(resolve => video.onloadedmetadata = resolve);
-  video.play();
+
+  await new Promise(resolve => {
+    video.onloadedmetadata = () => {
+      video.play();
+      resolve();
+    };
+  });
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 }
@@ -16,6 +22,10 @@ async function setupCamera() {
 function drawSkeleton(keypoints) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Draw video frame as background
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Draw keypoints
   keypoints.forEach(kp => {
     if (kp.score > 0.5) {
       ctx.beginPath();
@@ -25,14 +35,17 @@ function drawSkeleton(keypoints) {
     }
   });
 
+  // Define connections
   const connections = [
     [5, 7], [7, 9], [6, 8], [8, 10],
     [5, 6], [11, 12], [11, 13], [13, 15],
     [12, 14], [14, 16]
   ];
 
+  // Draw skeleton lines
   connections.forEach(([a, b]) => {
-    const kpA = keypoints[a], kpB = keypoints[b];
+    const kpA = keypoints[a];
+    const kpB = keypoints[b];
     if (kpA.score > 0.5 && kpB.score > 0.5) {
       ctx.beginPath();
       ctx.moveTo(kpA.x, kpA.y);
@@ -49,11 +62,16 @@ async function run() {
   await setupCamera();
 
   // Use MoveNet SinglePose Lightning
-  const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);
+  const detector = await poseDetection.createDetector(
+    poseDetection.SupportedModels.MoveNet,
+    { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+  );
 
   async function detect() {
     const poses = await detector.estimatePoses(video);
-    if (poses.length > 0) drawSkeleton(poses[0].keypoints);
+    if (poses.length > 0) {
+      drawSkeleton(poses[0].keypoints);
+    }
     requestAnimationFrame(detect);
   }
 
