@@ -26,35 +26,47 @@ const keypointNames = [
   "left_knee", "right_knee", "left_ankle", "right_ankle"
 ];
 
+// Define skeleton connections (full body + face)
+const connections = [
+  // Face
+  [0, 1], [0, 2], [1, 3], [2, 4],
+  // Torso
+  [5, 6], [5, 11], [6, 12], [11, 12],
+  // Arms
+  [5, 7], [7, 9], [6, 8], [8, 10],
+  // Legs
+  [11, 13], [13, 15], [12, 14], [14, 16]
+];
+
 // Draw skeleton + labels over video
 function drawSkeleton(keypoints) {
-  // First draw the current video frame
+  // Draw video frame
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Draw keypoints + labels
+  // Draw keypoints
   keypoints.forEach((kp, i) => {
     if (kp.score > 0.5) {
-      // Draw circle
+      // Dot
       ctx.beginPath();
       ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
       ctx.fillStyle = 'red';
       ctx.fill();
 
-      // Draw label
-      ctx.font = "12px Arial";
-      ctx.fillStyle = "yellow";
-      ctx.fillText(keypointNames[i], kp.x + 6, kp.y - 6);
+      // Label with black outline for visibility
+      ctx.font = "14px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 3;
+      ctx.strokeText(keypointNames[i], kp.x + 8, kp.y);
+
+      ctx.fillStyle = "white";
+      ctx.fillText(keypointNames[i], kp.x + 8, kp.y);
     }
   });
 
-  // Define skeleton connections
-  const connections = [
-    [5, 7], [7, 9], [6, 8], [8, 10],
-    [5, 6], [11, 12], [11, 13], [13, 15],
-    [12, 14], [14, 16]
-  ];
-
-  // Draw connecting lines
+  // Draw skeleton lines
   connections.forEach(([a, b]) => {
     const kpA = keypoints[a];
     const kpB = keypoints[b];
